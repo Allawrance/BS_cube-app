@@ -415,6 +415,14 @@ const toB64 = f => new Promise((res, rej) => {
 
 const sanitiseInput = (str) => String(str || '').replace(/[`${}\\]/g, '').trim().slice(0, 200);
 
+// Privacy: convert "Alan Lawrance" → "Alan L" for Google Sheets logging
+const privacyName = (fullName) => {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "anonymous";
+  if (parts.length === 1) return parts[0];
+  return parts[0] + " " + parts[parts.length - 1][0].toUpperCase();
+};
+
 // ─── SVG CONSTANTS ────────────────────────────────────────────────────────────
 const FONT_SIZE = 17;
 const CW  = 10.2;
@@ -721,7 +729,7 @@ function App() {
     try {
       const scanRes = await fetch(PROXY, {
         method:"POST",
-        headers:{"Content-Type":"application/json","X-Student-Name":encodeURIComponent(studentName.trim()||"anonymous"),"X-Question-Number":"scan"},
+        headers:{"Content-Type":"application/json","X-Student-Name":encodeURIComponent(privacyName(studentName.trim()||"anonymous")),"X-Question-Number":"scan"},
         body: JSON.stringify({
           model:"claude-haiku-4-5-20251001", max_tokens:200,
           messages:[{ role:"user", content:[
@@ -756,7 +764,7 @@ Return ONLY a JSON array of strings e.g. ["1","2","3"]. No other text.` }
     try {
       const res = await fetch(PROXY, {
         method:"POST",
-        headers:{"Content-Type":"application/json","X-Student-Name":encodeURIComponent(studentName.trim()||"anonymous"),"X-Question-Number":encodeURIComponent(sanitiseInput(questionNumber))},
+        headers:{"Content-Type":"application/json","X-Student-Name":encodeURIComponent(privacyName(studentName.trim()||"anonymous")),"X-Question-Number":encodeURIComponent(sanitiseInput(questionNumber))},
         signal: abortRef.current.signal,
         body: JSON.stringify({
           model: MODEL, max_tokens: 4000,
@@ -783,11 +791,11 @@ Return ONLY a JSON array of strings e.g. ["1","2","3"]. No other text.` }
           headers:{ "Content-Type":"text/plain" },
           body: JSON.stringify({
             type:             "FULL_ROW",
-            student:          studentName.trim() || "anonymous",
+            subject:          "Business Studies",
+            student:          privacyName(studentName.trim() || "anonymous"),
             question:         questionNumber,
             callType:         "ANALYSE",
             model:            MODEL,
-            course:           "Business Studies",
             modules:          [...new Set(kwds.map(k=>k.topicCode||k.module).filter(Boolean))].join(", ") || "—",
             directives:       dirs.map(d=>d.word).join(", ") || "—",
             syllabusKeywords: kwds.map(k=>k.word||k.topicTitle||"").filter(Boolean).join(" | ") || "—",
@@ -810,7 +818,7 @@ Return ONLY a JSON array of strings e.g. ["1","2","3"]. No other text.` }
     try {
       const res = await fetch(PROXY, {
         method:"POST",
-        headers:{"Content-Type":"application/json","X-Student-Name":encodeURIComponent(studentName.trim()||"anonymous")},
+        headers:{"Content-Type":"application/json","X-Student-Name":encodeURIComponent(privacyName(studentName.trim()||"anonymous"))},
         body: JSON.stringify({
           model:"claude-haiku-4-5-20251001", max_tokens:1000,
           system:[{ type:"text", cache_control:{ type:"ephemeral" }, text:`You are an expert NSW HSC Business Studies marker and teacher. You generate Band 6 model responses aligned to official NESA performance band descriptors and Business Studies marking standards.

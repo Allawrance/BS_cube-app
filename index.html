@@ -925,14 +925,6 @@ Return ONLY the model response text — no heading, no preamble.`
     return causal + (rubric.complexNounGroups?.score||0) + modality + (rubric.logicalFlow?.score||0);
   };
 
-  const tabStyle = (id) => ({
-    padding:"10px 18px", border:"none", borderRadius:"8px", fontSize:"13px", fontWeight:700,
-    cursor:"pointer", fontFamily:"sans-serif", letterSpacing:"0.5px",
-    background: activeTab===id ? gold : "rgba(255,255,255,0.06)",
-    color: activeTab===id ? "#0d1b2a" : "#7a9ab8",
-    transition:"all 0.2s"
-  });
-
   const bg = "linear-gradient(160deg,#040d18 0%,#081525 40%,#0a1e35 100%)";
 
   return (
@@ -1061,13 +1053,6 @@ Return ONLY the model response text — no heading, no preamble.`
             </div>
 
             <Steps current={4} activeTab={activeTab} onTabChange={setActiveTab}/>
-
-            {/* Tab switcher */}
-            <div style={{display:"flex",gap:"8px",flexWrap:"wrap",marginBottom:"20px"}}>
-              {[["cube","CUBE"],["plan","Plan"],["script","Script"],["rubric","Rubric"],["feedback","Feedback"]].map(([id,label])=>(
-                <button key={id} onClick={()=>setActiveTab(id)} style={tabStyle(id)}>{label}</button>
-              ))}
-            </div>
 
             {/* ═══ CUBE TAB ═══ */}
             {activeTab==="cube"&&<div>

@@ -520,13 +520,20 @@ function SVGAnnotatedPaper({ text, directives, syllabusKeywords, constraints, pl
   });
 
   // B: green boxes — constraints
+  // Use start+end character positions so multi-word phrases (e.g. "business performance")
+  // get the correct pixel width regardless of word wrap.
   constraints?.forEach((ct, ci) => {
     const si = findExact(ct.text, ct.startIndex ?? 0);
+    const ei = si + ct.text.length;
     const s = getXY(si, lines, PLAN_EXTRA);
-    const wPx = ct.text.length * CW;
+    const e = getXY(ei, lines, PLAN_EXTRA);
+    // If phrase wraps across lines, draw on the start line using full phrase px width
+    const wPx = s.li === e.li
+      ? (e.x - s.x)                    // same line — use actual pixel span
+      : ct.text.length * CW;            // wrapped — fall back to char count
     const boxTop = s.y - FONT_SIZE * 0.85;
-    const boxH = FONT_SIZE * 1.15;
-    shapes.push(<rect key={`b${ci}`} x={s.x - 2} y={boxTop} width={wPx + 4} height={boxH} fill="none" stroke="#2e7d32" strokeWidth="2" rx="3" opacity="0.85"/>);
+    const boxH   = FONT_SIZE * 1.15;
+    shapes.push(<rect key={`b${ci}`} x={s.x - 3} y={boxTop} width={Math.max(wPx + 6, 20)} height={boxH} fill="none" stroke="#2e7d32" strokeWidth="2" rx="3" opacity="0.85"/>);
   });
 
   // E: planning arrows (plan mode only)
@@ -537,23 +544,28 @@ function SVGAnnotatedPaper({ text, directives, syllabusKeywords, constraints, pl
       const si = findExact(arrow.targetWord, arrow.targetStartIndex ?? 0);
       const s = getXY(si, lines, PLAN_EXTRA);
       const targetLine = s.li;
+
+      // Alternate above/below to avoid overlap
       let above;
       if (nArrows <= 1) above = true;
       else if (nArrows === 2) above = (ai === 0);
       else if (nArrows === 3) above = (ai !== 1);
-      else above = true;
+      else above = (ai % 2 === 0);
 
       const stemToY = above
         ? PT + PLAN_EXTRA + targetLine * LH - FONT_SIZE * 0.9 - 4
         : PT + PLAN_EXTRA + targetLine * LH + FONT_SIZE * 0.25 + 4;
-      const stemEndY = above ? stemToY - 8 : stemToY + 8;
-      const tipY = stemToY;
+      const tipY   = stemToY;
       const arrowX = s.x + (arrow.targetWord?.length || 4) * CW / 2;
-      const PILL_H = 26; const PILL_MARGIN = 10;
+
+      const PILL_H      = 26;
+      const PILL_MARGIN = 10;
       const pillY = above ? stemToY - PILL_H - PILL_MARGIN : stemToY + PILL_MARGIN;
       const label = arrow.label || "";
       const pillW = Math.max(label.length * 7.5 + 20, 60);
-      const pillX = Math.max(PL, Math.min(arrowX - pillW / 2, W - pillX - pillW));
+      // Fix: compute pillX without self-reference
+      const pillXRaw = arrowX - pillW / 2;
+      const pillX    = Math.max(PL, Math.min(pillXRaw, W - PL - pillW));
 
       notes.push(
         <g key={`arrow${ai}`}>
@@ -1002,7 +1014,7 @@ Return ONLY the model response text — no heading, no preamble.`
                 {primaryKwd.topicCode&&<div style={{color:"#e8eaf0",fontSize:"13px",fontFamily:"sans-serif",whiteSpace:"nowrap"}}>{primaryKwd.topicCode}</div>}
                 {questionNumber&&<div style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:"20px",padding:"3px 12px",color:"#c8d8e8",fontSize:"12px",fontWeight:700,fontFamily:"sans-serif"}}>Q{questionNumber}</div>}
                 {c.marks&&<div style={{background:"rgba(201,168,76,0.15)",border:"1px solid rgba(201,168,76,0.4)",borderRadius:"20px",padding:"3px 12px",color:gold,fontSize:"12px",fontWeight:700,fontFamily:"sans-serif"}}>{c.marks} marks</div>}
-                {!marksKnown&&band&&<div style={{background:"rgba(76,175,80,0.15)",border:"1px solid rgba(76,175,80,0.4)",borderRadius:"20px",padding:"3px 12px",color:"#81c784",fontSize:"13px",fontWeight:800,fontFamily:"sans-serif"}}>{band}</div>}
+                {!marksKnown&&band&&<div style={{background:"rgba(76,175,80,0.15)",border:"1px solid rgba(76,175,80,0.4)",borderRadius:"20px",padding:"3px 12px",color:"#81c784",fontSize:"13px",fontWeight:800,fontFamily:"sans-serif"}}>Indicative {band}</div>}
                 {studentName.trim()&&<div style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:"20px",padding:"3px 12px",color:"#c8d8e8",fontSize:"12px",fontWeight:700,fontFamily:"sans-serif",display:"flex",alignItems:"center",gap:"5px"}}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="#c9a84c" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="7" r="4"/><path d="M12 13c-5 0-8 2.5-8 4v1h16v-1c0-1.5-3-4-8-4z"/></svg>
                   {studentName.trim()}
@@ -1167,7 +1179,7 @@ Return ONLY the model response text — no heading, no preamble.`
                       <td style={{padding:"12px 14px",color:gold,fontWeight:800,fontFamily:"sans-serif",fontSize:"13px"}}>TOTAL</td>
                       <td style={{padding:"12px 14px",textAlign:"center",color:gold,fontWeight:900,fontSize:"18px",fontFamily:"sans-serif"}}>{score}<span style={{fontSize:"12px",color:"#888",fontWeight:400,fontFamily:"sans-serif"}}>/{maxScore}</span></td>
                       <td style={{padding:"12px 14px",fontFamily:"sans-serif",fontSize:"13px"}}>
-                        {!marksKnown&&band&&<span style={{background:"rgba(76,175,80,0.2)",border:"1px solid rgba(76,175,80,0.5)",borderRadius:"8px",padding:"3px 12px",color:"#81c784",fontWeight:800}}>{band}</span>}
+                        {!marksKnown&&band&&<span style={{background:"rgba(76,175,80,0.2)",border:"1px solid rgba(76,175,80,0.5)",borderRadius:"8px",padding:"3px 12px",color:"#81c784",fontWeight:800}}>Indicative {band}</span>}
                         {marksKnown&&<span style={{color:"#e8eaf0",fontSize:"12px"}}>Mark value provided — band not calculated</span>}
                       </td>
                     </tr>

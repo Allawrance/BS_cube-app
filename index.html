@@ -480,7 +480,44 @@ function SVGAnnotatedPaper({ text, directives, syllabusKeywords, constraints, pl
   const lines = buildLines(text, effectiveCPL);
   const nLines = Math.max(lines.length, 1);
   const W = PL + effectiveCPL * CW + PL;
-  const PLAN_EXTRA = mode === "plan" ? 280 : 0;
+
+  // ── Dynamic PLAN_EXTRA: calculate only the space actually needed above line 0 ──
+  // Pass 1: use PLAN_EXTRA=0 to find which arrows sit above line 0 and how much
+  // space their pills require. Then set PLAN_EXTRA = that amount + 20px breathing room.
+  const PILL_H = 26; const PILL_MARGIN = 10; const TOP_PAD = 20;
+  let PLAN_EXTRA = 0;
+  if (mode === "plan" && planningArrows?.length) {
+    const nArrows = planningArrows.length;
+    let maxAboveNeed = 0;
+    planningArrows.forEach((arrow, ai) => {
+      let above;
+      if (nArrows <= 1) above = true;
+      else if (nArrows === 2) above = (ai === 0);
+      else if (nArrows === 3) above = (ai !== 1);
+      else above = (ai % 2 === 0);
+      if (!above) return;
+      // Find target line using PLAN_EXTRA=0 pass
+      const si0 = (() => {
+        const w = arrow.targetWord; const h = arrow.targetStartIndex ?? 0;
+        if (!w) return h;
+        const wl = w.toLowerCase(); const ql = text.toLowerCase();
+        for (let d = 0; d <= 25; d++) { const i = h+d; if (ql.slice(i,i+wl.length)===wl) return i; }
+        for (let d = 1; d <= 10; d++) { const i = h-d; if (i>=0&&ql.slice(i,i+wl.length)===wl) return i; }
+        return h;
+      })();
+      const s0 = getXY(si0, lines, 0);
+      const targetLine = s0.li;
+      // Space needed: from top of SVG (y=0) to top of pill above this line
+      // stemToY (with PLAN_EXTRA=0) = PT + targetLine*LH - FONT_SIZE*0.9 - 4
+      const stemToY0 = PT + targetLine * LH - FONT_SIZE * 0.9 - 4;
+      const pillTop0 = stemToY0 - PILL_H - PILL_MARGIN;
+      // We need pillTop to be >= TOP_PAD, so PLAN_EXTRA >= TOP_PAD - pillTop0
+      const needed = TOP_PAD - pillTop0;
+      if (needed > maxAboveNeed) maxAboveNeed = needed;
+    });
+    PLAN_EXTRA = Math.max(0, Math.ceil(maxAboveNeed));
+  }
+
   const H = PT + PLAN_EXTRA + nLines * LH + 30;
   const shapes = [];
 

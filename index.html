@@ -941,10 +941,9 @@ Return ONLY a JSON array of strings e.g. ["1","2","3"]. No other text.` }
             modules:          [...new Set(kwds.map(k=>k.topicCode||k.module).filter(Boolean))].join(", ") || "—",
             directives:       dirs.map(d=>d.word).join(", ") || "—",
             syllabusKeywords: kwds.map(k=>k.word||k.topicTitle||"").filter(Boolean).join(" | ") || "—",
-            totalMarks:       marks !== null && marks !== undefined ? marks : "",
-            studentMark:      marks !== null && marks !== undefined
-                                ? `${rawScore}/${maxScore}`
-                                : `Ind ${band}`,
+            studentMark:      marks !== null && marks !== undefined ? rawScore : `Ind ${band}`,
+            cubeMark:         `${rawScore}/${maxScore}`,
+            questionValue:    marks !== null && marks !== undefined ? marks : "",
           })
         });
       } catch {}

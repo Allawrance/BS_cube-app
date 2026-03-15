@@ -1073,11 +1073,19 @@ Return ONLY the model response text — no heading, no preamble.`
             </div>
 
             {/* Upload zone */}
-            {!pageImg&&<div onClick={()=>fileRef.current.click()} style={{border:`2px dashed rgba(201,168,76,0.4)`,borderRadius:"20px",padding:"40px 24px",textAlign:"center",cursor:"pointer",background:"rgba(201,168,76,0.03)",transition:"all 0.2s",marginBottom:"20px"}} onMouseOver={e=>e.currentTarget.style.background="rgba(201,168,76,0.08)"} onMouseOut={e=>e.currentTarget.style.background="rgba(201,168,76,0.03)"}>
-              <div style={{fontSize:"52px",marginBottom:"12px"}}>📄</div>
-              <div style={{fontSize:"16px",color:gold,fontWeight:700,fontFamily:"sans-serif",marginBottom:"6px"}}>Tap to upload or take a photo</div>
-              <div style={{fontSize:"15px",color:"#c8d8e8",fontFamily:"sans-serif",lineHeight:"1.6"}}>Your page can include the printed question,<br/>your handwritten answer, and any stimulus material.</div>
-            </div>}
+            {(()=>{
+              const p = studentName.trim().split(/\s+/).filter(Boolean);
+              const nameValid = p.length >= 2 && p[p.length-1].length === 1;
+              const handleUploadClick = () => {
+                if (!nameValid) { setError("Please enter your first name and the first initial of your surname before uploading — e.g. Sue W"); return; }
+                setError(null); fileRef.current.click();
+              };
+              return !pageImg&&<div onClick={handleUploadClick} style={{border:`2px dashed ${nameValid?"rgba(201,168,76,0.4)":"rgba(229,115,115,0.5)"}`,borderRadius:"20px",padding:"40px 24px",textAlign:"center",cursor:"pointer",background:nameValid?"rgba(201,168,76,0.03)":"rgba(229,115,115,0.03)",transition:"all 0.2s",marginBottom:"20px",opacity:nameValid?1:0.75}} onMouseOver={e=>e.currentTarget.style.background=nameValid?"rgba(201,168,76,0.08)":"rgba(229,115,115,0.08)"} onMouseOut={e=>e.currentTarget.style.background=nameValid?"rgba(201,168,76,0.03)":"rgba(229,115,115,0.03)"}>
+                <div style={{fontSize:"52px",marginBottom:"12px"}}>{nameValid?"📄":"🔒"}</div>
+                <div style={{fontSize:"16px",color:nameValid?gold:"#e57373",fontWeight:700,fontFamily:"sans-serif",marginBottom:"6px"}}>{nameValid?"Tap to upload or take a photo":"Enter your name above first"}</div>
+                <div style={{fontSize:"15px",color:"#c8d8e8",fontFamily:"sans-serif",lineHeight:"1.6"}}>{nameValid?"Your page can include the printed question, your handwritten answer, and any stimulus material.":"Your name is required before you can upload a photo."}</div>
+              </div>;
+            })()}
             <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleImg}/>
 
             {pageImg&&<button onClick={cancelAndReset} style={{width:"100%",padding:"10px",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"10px",color:"#e8eaf0",fontSize:"13px",cursor:"pointer",marginBottom:"12px",fontFamily:"sans-serif"}}>✕ Choose a different photo</button>}
@@ -1450,5 +1458,4 @@ ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(
   </script>
 </body>
 </html>
-
 

@@ -913,8 +913,21 @@ Return ONLY a JSON array of strings e.g. ["1","2","3"]. No other text.` }
 
       // ── Log to Google Sheet ───────────────────────────────────────────────
       try {
-        const kwds = parsed?.phase1_cube?.syllabusKeywords || [];
-        const dirs = parsed?.phase1_cube?.directives || [];
+        const kwds   = parsed?.phase1_cube?.syllabusKeywords || [];
+        const dirs   = parsed?.phase1_cube?.directives || [];
+        const a3     = parsed?.phase3_analysis;
+        const marks  = parsed?.phase1_cube?.marks ?? null;
+
+        // Compute student score (mirrors totalScore() render logic)
+        const causalApp   = a3?.rubric?.causalConnectives?.applicable !== false;
+        const modalityApp = a3?.rubric?.modality?.applicable === true;
+        const rawScore    = (causalApp   ? (a3?.rubric?.causalConnectives?.score||0) : 0)
+                          + (a3?.rubric?.complexNounGroups?.score||0)
+                          + (modalityApp ? (a3?.rubric?.modality?.score||0)          : 0)
+                          + (a3?.rubric?.logicalFlow?.score||0);
+        const maxScore    = 10 + (causalApp ? 5 : 0) + (modalityApp ? 5 : 0);
+        const band        = getBand(rawScore, maxScore);
+
         fetch(WEBHOOK, {
           method:"POST", redirect:"follow",
           headers:{ "Content-Type":"text/plain" },
@@ -928,6 +941,10 @@ Return ONLY a JSON array of strings e.g. ["1","2","3"]. No other text.` }
             modules:          [...new Set(kwds.map(k=>k.topicCode||k.module).filter(Boolean))].join(", ") || "—",
             directives:       dirs.map(d=>d.word).join(", ") || "—",
             syllabusKeywords: kwds.map(k=>k.word||k.topicTitle||"").filter(Boolean).join(" | ") || "—",
+            totalMarks:       marks !== null && marks !== undefined ? marks : "",
+            studentMark:      marks !== null && marks !== undefined
+                                ? `${rawScore}/${maxScore}`
+                                : `Ind ${band}`,
           })
         });
       } catch {}
